@@ -3,8 +3,9 @@ import fitz  # PyMuPDF
 import re
 
 # Function to extract text from PDF
-def extract_text_from_pdf(file):
-    pdf_document = fitz.open(stream=file)
+def extract_text_from_pdf(uploaded_file):
+    # Read file as binary data
+    pdf_document = fitz.open(stream=uploaded_file.read(), filetype="pdf")
     text = ""
     for page_num in range(pdf_document.page_count):
         page = pdf_document[page_num]
@@ -38,7 +39,7 @@ def extract_references(text):
     return references if references else ["References not found"]
 
 # Streamlit app setup
-st.title("ReResearch by Pranshu")
+st.title("PDF Research Paper Extractor")
 st.write("Upload a PDF file, and the dashboard will extract the title, authors, headings, and references.")
 
 # File upload widget
