@@ -69,3 +69,7 @@ if uploaded_file is not None:
     st.subheader("References")
     for reference in references:
         st.write(f"- {reference}")
+
+st.subheader("Created by Us for You")
+    st.write("Created by Pranshu. ReResearch")
+
