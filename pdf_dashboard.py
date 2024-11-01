@@ -55,7 +55,7 @@ def extract_text_from_pdf(file_data):
 
 # Streamlit app for PDF extraction
 def main():
-    st.title("PDF Research Paper Extractor")
+    st.title("ReResearch for Research")
 
     uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
     if uploaded_file is not None:
