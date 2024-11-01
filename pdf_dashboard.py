@@ -37,15 +37,11 @@ def extract_authors(text):
     return authors
 
 # Function to extract references from the PDF
+# To extract references
 def extract_references(text):
-    references = []
-    ref_start = text.lower().find("references")
-    if ref_start != -1:
-        references_text = text[ref_start:].split("\n")
-        for line in references_text:
-            if len(line.strip()) > 5:
-                references.append(line.strip())
-    return references
+    reference_pattern = r"\[\d+\]\s.*?\.\s.*?\."
+    references = re.findall(reference_pattern, text)
+    return references if references else ["References not found"]
 
 # Corrected function to process the entire PDF as text
 def extract_text_from_pdf(file_data):
