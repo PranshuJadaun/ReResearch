@@ -1,8 +1,8 @@
 import streamlit as st
-import fitz  # PyMuPDF
+import fitz
 import re
 
-# Function to extract text from PDF
+# To extract text from PDF
 def extract_text_from_pdf(file):
     pdf_document = fitz.open(stream=file.read(), filetype="pdf")
     text = ""
@@ -12,36 +12,36 @@ def extract_text_from_pdf(file):
     pdf_document.close()
     return text
 
-# Function to extract title
+# To extract title
 def extract_title(text):
     title_pattern = r"^[A-Z][A-Za-z\s\-]+$"
     match = re.search(title_pattern, text, re.MULTILINE)
     return match.group(0) if match else "Title not found"
 
-# Function to extract authors
+# To extract authors
 def extract_authors(text):
     author_pattern = r"\b[A-Z][a-zA-Z]*\s(?:[A-Z]\.\s)?[A-Z][a-zA-Z]*\b"
     authors = re.findall(author_pattern, text)
     return authors if authors else ["Authors not found"]
 
-# Function to extract headings
+# To extract headings
 def extract_headings(text):
     heading_pattern = r"(^[A-Z\s]+$)|(^\d+\.\s[A-Za-z\s]+$)"
     matches = re.findall(heading_pattern, text, re.MULTILINE)
     headings = [h[0] or h[1] for h in matches if h[0] or h[1]]
     return headings
 
-# Function to extract references
+# To extract references
 def extract_references(text):
     reference_pattern = r"\[\d+\]\s.*?\.\s.*?\."
     references = re.findall(reference_pattern, text)
     return references if references else ["References not found"]
 
-# Streamlit app setup
-st.title("PDF Research Paper Extractor")
-st.write("Upload a PDF file, and the dashboard will extract the title, authors, headings, and references.")
+# Streamlit
+st.title("ReResearch For Research")
+st.write("Upload a PDF file, ReResearch will extract the title, authors, headings, and references just for you.")
 
-# File upload widget
+# File upload widget By streamlit
 uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
 
 if uploaded_file is not None:
