@@ -13,7 +13,7 @@ def extract_title(text):
 
 # Function to extract headings based on font size and bold text
 def extract_headings_from_pdf(file):
-    pdf_document = fitz.open(file)
+    pdf_document = fitz.open(stream=file.read(), filetype="pdf")
     headings = []
 
     for page_num in range(pdf_document.page_count):
@@ -48,9 +48,9 @@ def extract_references(text):
                 references.append(line.strip())
     return references
 
-# Function to process the entire PDF as text
+# Corrected function to process the entire PDF as text
 def extract_text_from_pdf(file):
-    pdf_document = fitz.open(file)
+    pdf_document = fitz.open(stream=file.read(), filetype="pdf")  # Open the PDF from the binary stream
     text = ""
     for page_num in range(pdf_document.page_count):
         page = pdf_document[page_num]
@@ -98,4 +98,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
