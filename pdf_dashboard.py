@@ -1,7 +1,13 @@
-import fitz  # PyMuPDF
 import re
+import fitz  # PyMuPDF
 import streamlit as st
 from io import BytesIO
+import nltk
+from nltk.corpus import names
+
+# Download the NLTK names dataset
+nltk.download("names")
+all_names = set(names.words())  # Contains common first names (male and female)
 
 # Function to extract the title from the PDF
 def extract_title(text):
@@ -28,11 +34,29 @@ def extract_headings_from_pdf(file_data):
     pdf_document.close()
     return headings
 
-# Function to extract authors using a regular expression
+# Enhanced Function to extract authors
 def extract_authors(text):
-    author_pattern = r"\b[A-Z][a-zA-Z]*\s[A-Z]\.?\s?[A-Z][a-zA-Z]*\b|\b[A-Z][a-zA-Z]*\s[A-Z][a-zA-Z]*\b"
-    authors = re.findall(author_pattern, text)
-    return authors
+    # Limit search to the first 15 lines (common for author names)
+    lines = text.split("\n")[:15]
+    limited_text = "\n".join(lines)
+    
+    # Improved regex pattern to capture names in common formats
+    author_pattern = r"\b[A-Z][a-z]+(?:\s[A-Z]\.)?(?:\s[A-Z][a-z]+)\b"
+    potential_authors = re.findall(author_pattern, limited_text)
+
+    # Exclusion of known non-name terms and filtering against common names
+    exclusions = {
+        "Motion", "Sensor", "Electricity", "Engineering", "Research", "University", "School", "Institute",
+        "Indonesia", "Control", "Materials", "Review", "Analysis", "Method", "Result", "System", "IEEE",
+        "Journal", "Conclusion", "Department", "Technology", "College", "International", "Methodology",
+        "Testing", "Study", "Objective", "Development"
+    }
+    
+    authors = [name for name in potential_authors 
+               if name not in exclusions and name.split()[0] in all_names]
+
+    # Return unique names as authors
+    return list(set(authors))
 
 # Function to extract references from the PDF
 def extract_references(text):
@@ -40,9 +64,9 @@ def extract_references(text):
     references = re.findall(reference_pattern, text)
     return [ref[0] if ref[0] else ref[1] for ref in references] if references else ["References not found"]
 
-# Corrected function to process the entire PDF as text
+# Function to process the entire PDF as text
 def extract_text_from_pdf(file_data):
-    pdf_document = fitz.open(stream=BytesIO(file_data), filetype="pdf")  # Open from binary data
+    pdf_document = fitz.open(stream=BytesIO(file_data), filetype="pdf")
     text = ""
     for page_num in range(pdf_document.page_count):
         page = pdf_document[page_num]
@@ -63,16 +87,14 @@ def main():
         file_data = uploaded_file.read()  # Read file once and store data
         st.sidebar.success("File uploaded successfully!")
 
-        # Add a spinner to indicate that processing is in progress
         with st.spinner("Extracting information... please wait."):
-            # Extract text and information from PDF
             pdf_text = extract_text_from_pdf(file_data)
             title = extract_title(pdf_text)
             headings = extract_headings_from_pdf(file_data)
             authors = extract_authors(pdf_text)
             references = extract_references(pdf_text)
 
-        # Display a quick summary
+        # Display a summary
         st.header("Summary of Extraction 📝")
         st.write(f"**Title:** {title}")
         st.write(f"**Number of Headings Found:** {len(headings)}")
@@ -80,13 +102,12 @@ def main():
         st.write(f"**Number of References Found:** {len(references)}")
         st.markdown("---")
 
-        # Display detailed results
+        # Display results
         st.subheader("Title 🎓")
         st.markdown(f"**{title}**")
 
         st.subheader("Headings 📌")
         if headings:
-            st.write("Here are the extracted headings:")
             for heading in headings:
                 st.markdown(f"- {heading}")
         else:
@@ -101,16 +122,10 @@ def main():
 
         st.subheader("References 📚")
         if references:
-            st.write("References found in the document:")
             for ref in references:
                 st.markdown(f"- {ref}")
         else:
             st.write("No references found.")
-
-        # Option to download extracted data
-        if st.button("Download Extracted Data as Text"):
-            extracted_data = f"Title:\n{title}\n\nHeadings:\n" + "\n".join(headings) + "\n\nAuthors:\n" + ", ".join(authors) + "\n\nReferences:\n" + "\n".join(references)
-            st.download_button("Download", data=extracted_data, file_name="extracted_data.txt", mime="text/plain")
 
 if __name__ == "__main__":
     main()
