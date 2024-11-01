@@ -24,12 +24,21 @@ def extract_authors(text):
     authors = re.findall(author_pattern, text)
     return authors if authors else ["Authors not found"]
 
-# To extract headings
+# # To extract headings
+# def extract_headings(text):
+#     heading_pattern = r"(^[A-Z\s]+$)|(^\d+\.\s[A-Za-z\s]+$)"
+#     matches = re.findall(heading_pattern, text, re.MULTILINE)
+#     headings = [h[0] or h[1] for h in matches if h[0] or h[1]]
+#     return headings
+
+# Function to extract headings with an improved pattern
 def extract_headings(text):
-    heading_pattern = r"(^[A-Z\s]+$)|(^\d+\.\s[A-Za-z\s]+$)"
+    # Pattern to capture typical headings (numbered sections or lines in all caps)
+    heading_pattern = r"(^[A-Z\s]{3,}$)|(^\d+\.\s.+$)|(^[A-Z][a-z]+\s[A-Z][a-z]+)"
     matches = re.findall(heading_pattern, text, re.MULTILINE)
-    headings = [h[0] or h[1] for h in matches if h[0] or h[1]]
-    return headings
+    # Flatten the result as re.findall returns tuples when there are multiple groups
+    headings = [match[0] if match[0] else match[1] if match[1] else match[2] for match in matches if any(match)]
+    return headings if headings else ["No headings found"]
 
 # To extract references
 def extract_references(text):
