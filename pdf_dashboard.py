@@ -91,7 +91,7 @@ def main():
                 st.write(f"- {ref}")
         else:
             st.write("No references found.")
-st.write("Created with LOVE by Pranshu. \n ReResearch V1.2")
+        st.write("Created with LOVE by Pranshu. \n ReResearch V1.2")
 
 
 if __name__ == "__main__":
