@@ -1,10 +1,10 @@
 import fitz  # PyMuPDF
 import re
 import streamlit as st
+from io import BytesIO
 
 # Function to extract the title from the PDF
 def extract_title(text):
-    # Assuming the title is the first non-empty line with a large font size
     lines = text.split("\n")
     for line in lines[:10]:  # Check only the first few lines
         if len(line.strip()) > 5:
@@ -12,8 +12,8 @@ def extract_title(text):
     return "Title not found"
 
 # Function to extract headings based on font size and bold text
-def extract_headings_from_pdf(file):
-    pdf_document = fitz.open(stream=file.read(), filetype="pdf")
+def extract_headings_from_pdf(file_data):
+    pdf_document = fitz.open(stream=BytesIO(file_data), filetype="pdf")
     headings = []
 
     for page_num in range(pdf_document.page_count):
@@ -38,7 +38,6 @@ def extract_authors(text):
 
 # Function to extract references from the PDF
 def extract_references(text):
-    # Assuming references are at the end and start with "References" or similar heading
     references = []
     ref_start = text.lower().find("references")
     if ref_start != -1:
@@ -49,8 +48,8 @@ def extract_references(text):
     return references
 
 # Corrected function to process the entire PDF as text
-def extract_text_from_pdf(file):
-    pdf_document = fitz.open(stream=file.read(), filetype="pdf")  # Open the PDF from the binary stream
+def extract_text_from_pdf(file_data):
+    pdf_document = fitz.open(stream=BytesIO(file_data), filetype="pdf")  # Open from binary data
     text = ""
     for page_num in range(pdf_document.page_count):
         page = pdf_document[page_num]
@@ -64,11 +63,12 @@ def main():
 
     uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
     if uploaded_file is not None:
-        pdf_text = extract_text_from_pdf(uploaded_file)
-        
-        # Extract information
+        file_data = uploaded_file.read()  # Read file once and store data
+
+        # Extract text and information from PDF
+        pdf_text = extract_text_from_pdf(file_data)
         title = extract_title(pdf_text)
-        headings = extract_headings_from_pdf(uploaded_file)
+        headings = extract_headings_from_pdf(file_data)
         authors = extract_authors(pdf_text)
         references = extract_references(pdf_text)
 
