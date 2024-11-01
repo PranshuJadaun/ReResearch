@@ -1,70 +1,21 @@
-import re
 import fitz  # PyMuPDF
 import streamlit as st
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from io import BytesIO
-import nltk
-from nltk.corpus import names
+import torch
 
-# Download the NLTK names dataset
-nltk.download("names")
-all_names = set(names.words())  # Contains common first names (male and female)
+# Load GPT-J model and tokenizer
+model_name = "EleutherAI/gpt-j-6B"  # Replace with 'EleutherAI/gpt-neox-20b' if you have the resources
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.float16).to("cuda" if torch.cuda.is_available() else "cpu")
 
-# Function to extract the title from the PDF
-def extract_title(text):
-    lines = text.split("\n")
-    for line in lines[:10]:  # Check only the first few lines
-        if len(line.strip()) > 5:
-            return line.strip()
-    return "Title not found"
+# Function to query the model with specific prompts
+def query_model(model, tokenizer, prompt, max_length=200):
+    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    outputs = model.generate(inputs["input_ids"], max_length=max_length, num_return_sequences=1)
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-# Function to extract headings based on font size and bold text
-def extract_headings_from_pdf(file_data):
-    pdf_document = fitz.open(stream=BytesIO(file_data), filetype="pdf")
-    headings = []
-    for page_num in range(pdf_document.page_count):
-        page = pdf_document[page_num]
-        blocks = page.get_text("dict")["blocks"]
-        
-        for block in blocks:
-            if "lines" in block:
-                for line in block["lines"]:
-                    for span in line["spans"]:
-                        if span["size"] > 12 and span["flags"] & 2:  # flags & 2 checks for bold text
-                            headings.append(span["text"])
-    pdf_document.close()
-    return headings
-
-# Enhanced Function to extract authors
-def extract_authors(text):
-    # Limit search to the first 15 lines (common for author names)
-    lines = text.split("\n")[:15]
-    limited_text = "\n".join(lines)
-    
-    # Improved regex pattern to capture names in common formats
-    author_pattern = r"\b[A-Z][a-z]+(?:\s[A-Z]\.)?(?:\s[A-Z][a-z]+)\b"
-    potential_authors = re.findall(author_pattern, limited_text)
-
-    # Exclusion of known non-name terms and filtering against common names
-    exclusions = {
-        "Motion", "Sensor", "Electricity", "Engineering", "Research", "University", "School", "Institute",
-        "Indonesia", "Control", "Materials", "Review", "Analysis", "Method", "Result", "System", "IEEE",
-        "Journal", "Conclusion", "Department", "Technology", "College", "International", "Methodology",
-        "Testing", "Study", "Objective", "Development"
-    }
-    
-    authors = [name for name in potential_authors 
-               if name not in exclusions and name.split()[0] in all_names]
-
-    # Return unique names as authors
-    return list(set(authors))
-
-# Function to extract references from the PDF
-def extract_references(text):
-    reference_pattern = r"(\[\d+\].*?\.)|(\d+\.\s.*?\.)"  # Capture styles with numbers or brackets
-    references = re.findall(reference_pattern, text)
-    return [ref[0] if ref[0] else ref[1] for ref in references] if references else ["References not found"]
-
-# Function to process the entire PDF as text
+# Function to extract text from PDF
 def extract_text_from_pdf(file_data):
     pdf_document = fitz.open(stream=BytesIO(file_data), filetype="pdf")
     text = ""
@@ -74,58 +25,39 @@ def extract_text_from_pdf(file_data):
     pdf_document.close()
     return text
 
-# Streamlit app for PDF extraction
+# Streamlit app
 def main():
-    st.set_page_config(page_title="ReResearch for Research", page_icon="📄")
-    st.title("ReResearch for Research 📄")
-    st.write("Created with ❤️ by Pranshu. (Under Development)")
+    st.title("GPT-J Enhanced PDF Extractor")
+    st.write("Upload a PDF file and extract structured information (title, authors, headings, and references) using GPT-J.")
 
-    st.sidebar.title("📁 Upload Your PDF")
-    uploaded_file = st.sidebar.file_uploader("Choose a PDF file", type="pdf")
-    
+    # Upload PDF file
+    uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
     if uploaded_file is not None:
-        file_data = uploaded_file.read()  # Read file once and store data
-        st.sidebar.success("File uploaded successfully!")
+        file_data = uploaded_file.read()
+        
+        # Extract text from PDF
+        extracted_text = extract_text_from_pdf(file_data)
+        
+        st.write("Extracting information with GPT-J...")
 
-        with st.spinner("Extracting information... please wait."):
-            pdf_text = extract_text_from_pdf(file_data)
-            title = extract_title(pdf_text)
-            headings = extract_headings_from_pdf(file_data)
-            authors = extract_authors(pdf_text)
-            references = extract_references(pdf_text)
-
-        # Display a summary
-        st.header("Summary of Extraction 📝")
-        st.write(f"**Title:** {title}")
-        st.write(f"**Number of Headings Found:** {len(headings)}")
-        st.write(f"**Number of Authors Found:** {len(authors)}")
-        st.write(f"**Number of References Found:** {len(references)}")
-        st.markdown("---")
+        # Run extraction tasks
+        title = query_model(model, tokenizer, f"Extract the title:\n{extracted_text[:500]}")
+        authors = query_model(model, tokenizer, f"Identify the authors:\n{extracted_text[:500]}")
+        headings = query_model(model, tokenizer, f"List section headings:\n{extracted_text[:1000]}")
+        references = query_model(model, tokenizer, f"Extract references:\n{extracted_text[-2000:]}")
 
         # Display results
-        st.subheader("Title 🎓")
-        st.markdown(f"**{title}**")
+        st.subheader("Title")
+        st.write(title)
 
-        st.subheader("Headings 📌")
-        if headings:
-            for heading in headings:
-                st.markdown(f"- {heading}")
-        else:
-            st.write("No headings found.")
+        st.subheader("Authors")
+        st.write(authors)
 
-        st.subheader("Authors 👥")
-        if authors:
-            st.write("The authors identified in the document are:")
-            st.write(", ".join(authors))
-        else:
-            st.write("No authors found.")
+        st.subheader("Headings")
+        st.write(headings)
 
-        st.subheader("References 📚")
-        if references:
-            for ref in references:
-                st.markdown(f"- {ref}")
-        else:
-            st.write("No references found.")
+        st.subheader("References")
+        st.write(references)
 
 if __name__ == "__main__":
     main()
