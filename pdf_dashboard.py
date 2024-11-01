@@ -38,7 +38,7 @@ def extract_references(text):
     return references if references else ["References not found"]
 
 # Streamlit app setup
-st.title("PDF Research Paper Extractor")
+st.title("ReResearch by Pranshu")
 st.write("Upload a PDF file, and the dashboard will extract the title, authors, headings, and references.")
 
 # File upload widget
