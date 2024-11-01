@@ -71,5 +71,5 @@ if uploaded_file is not None:
         st.write(f"- {reference}")
 
 st.subheader("Created by Us for You")
-    st.write("Created by Pranshu. ReResearch")
+st.write("Created by Pranshu. ReResearch")
 
