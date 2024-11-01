@@ -56,6 +56,7 @@ def extract_text_from_pdf(file_data):
 # Streamlit app for PDF extraction
 def main():
     st.title("ReResearch for Research")
+    st.write("Created with LOVE by Pranshu. \n ReResearch V1.2")
 
     uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
     if uploaded_file is not None:
@@ -91,7 +92,7 @@ def main():
                 st.write(f"- {ref}")
         else:
             st.write("No references found.")
-        st.write("Created with LOVE by Pranshu. \n ReResearch V1.2")
+        
 
 
 if __name__ == "__main__":
