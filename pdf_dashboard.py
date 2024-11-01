@@ -6,10 +6,11 @@ from io import BytesIO
 # Function to extract the title from the PDF
 def extract_title(text):
     lines = text.split("\n")
-    for line in lines[:10]:  # Check only the first few lines
-        if len(line.strip()) > 5:
+    for line in lines[:10]:  # Check the first few lines
+        if len(line.strip()) > 5 and not any(word in line.lower() for word in ["abstract", "introduction"]):
             return line.strip()
     return "Title not found"
+
 
 # Function to extract headings based on font size and bold text
 def extract_headings_from_pdf(file_data):
@@ -39,9 +40,10 @@ def extract_authors(text):
 # Function to extract references from the PDF
 # To extract references
 def extract_references(text):
-    reference_pattern = r"\[\d+\]\s.*?\.\s.*?\."
+    reference_pattern = r"(\[\d+\].*?\.)|(\d+\.\s.*?\.)"  # Capture styles with numbers or brackets
     references = re.findall(reference_pattern, text)
-    return references if references else ["References not found"]
+    return [ref[0] if ref[0] else ref[1] for ref in references] if references else ["References not found"]
+
 
 # Corrected function to process the entire PDF as text
 def extract_text_from_pdf(file_data):
@@ -56,10 +58,11 @@ def extract_text_from_pdf(file_data):
 # Streamlit app for PDF extraction
 def main():
     st.title("ReResearch for Research")
-    st.write("Created with LOVE by Pranshu. (UnderDevelopment)")
+    st.write("Created with ❤️ by Pranshu. (Under Development)")
 
     uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
     if uploaded_file is not None:
+        st.info("Processing your PDF... Please wait.")
         file_data = uploaded_file.read()  # Read file once and store data
 
         # Extract text and information from PDF
@@ -71,12 +74,12 @@ def main():
 
         # Display results
         st.subheader("Title")
-        st.write(title)
+        st.markdown(f"**{title}**")
 
         st.subheader("Headings")
         if headings:
             for heading in headings:
-                st.write(f"- {heading}")
+                st.markdown(f"- {heading}")
         else:
             st.write("No headings found.")
 
@@ -89,7 +92,7 @@ def main():
         st.subheader("References")
         if references:
             for ref in references:
-                st.write(f"- {ref}")
+                st.markdown(f"- {ref}")
         else:
             st.write("No references found.")
         
