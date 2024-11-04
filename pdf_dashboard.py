@@ -3,14 +3,10 @@ import re
 import streamlit as st
 import requests
 from io import BytesIO
-from transformers import pipeline
 import time
 
-# Load the model locally (fallback)
-generator = pipeline("text-generation", model="distilgpt2")
-
 # Hugging Face Inference API query function
-def query_huggingface_api(prompt, api_token, model="distilgpt2", retries=5):
+def query_huggingface_api(prompt, api_token, model="gpt2", retries=5):
     headers = {"Authorization": f"Bearer {api_token}"}
     api_url = f"https://api-inference.huggingface.co/models/{model}"
     payload = {"inputs": prompt, "parameters": {"max_length": 150}}
@@ -45,10 +41,6 @@ def extract_text_from_pdf(file_data):
     pdf_document.close()
     return text
 
-# Local processing function
-def local_query(prompt):
-    return generator(prompt, max_length=150)[0]['generated_text']
-
 # Streamlit app
 def main():
     st.title("Hugging Face API PDF Extractor")
@@ -75,20 +67,9 @@ def main():
 
         # Query the API for each prompt
         title = query_huggingface_api(title_prompt, api_token)
-        if title is None:  # If API fails, fall back to local model
-            title = local_query(title_prompt)
-
         authors = query_huggingface_api(authors_prompt, api_token)
-        if authors is None:
-            authors = local_query(authors_prompt)
-
         headings = query_huggingface_api(headings_prompt, api_token)
-        if headings is None:
-            headings = local_query(headings_prompt)
-
         references = query_huggingface_api(references_prompt, api_token)
-        if references is None:
-            references = local_query(references_prompt)
 
         # Display results
         st.subheader("Title")
