@@ -14,7 +14,7 @@ from io import BytesIO
 #         return response.json()[0]["generated_text"]
 #     else:
 #         raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
-def query_huggingface_api(prompt, api_token, model="gpt2-large"):
+def query_huggingface_api(prompt, api_token, model="distilgpt2"):
     headers = {"Authorization": f"Bearer {api_token}"}
     api_url = f"https://api-inference.huggingface.co/models/{model}"
     payload = {"inputs": prompt, "parameters": {"max_length": 150}}
