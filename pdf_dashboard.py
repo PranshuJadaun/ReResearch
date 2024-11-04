@@ -10,8 +10,14 @@ def query_huggingface_api(prompt, api_token, model="facebook/bart-large-cnn"):
     api_url = f"https://api-inference.huggingface.co/models/{model}"
     payload = {"inputs": prompt, "parameters": {"max_length": 150}}
     response = requests.post(api_url, headers=headers, json=payload)
+
+    # Check if the response is valid
     if response.status_code == 200:
-        return response.json()[0]["generated_text"]
+        try:
+            # Try to extract 'generated_text'
+            return response.json()[0]["generated_text"]
+        except (IndexError, KeyError):
+            raise Exception("The response does not contain 'generated_text'. Please check the model's output.")
     else:
         raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
 
@@ -60,24 +66,30 @@ def main():
         references_prompt = f"Identify the references in the following text:\n\n{extracted_text[-2000:]}"
 
         # Try to query the API for each prompt
+        title, authors, headings, references = "Not extracted", "Not extracted", "Not extracted", "Not extracted"
+
+        # Try extracting title
         try:
             title = query_huggingface_api(title_prompt, api_token)
         except Exception as e:
             st.error(f"Failed to extract title using API: {e}")
             title, authors = extract_title_and_authors(extracted_text)  # Fallback extraction
 
+        # Try extracting authors
         try:
             authors = query_huggingface_api(authors_prompt, api_token)
         except Exception as e:
             st.error(f"Failed to extract authors using API: {e}")
             title, authors = extract_title_and_authors(extracted_text)  # Fallback extraction
 
+        # Try extracting headings
         try:
             headings = query_huggingface_api(headings_prompt, api_token)
         except Exception as e:
             st.error(f"Failed to extract headings using API: {e}")
             headings = "Headings extraction failed."
 
+        # Try extracting references
         try:
             references = query_huggingface_api(references_prompt, api_token)
         except Exception as e:
