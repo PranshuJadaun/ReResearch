@@ -43,7 +43,8 @@ def extract_text_from_pdf(file_data):
 
 # Streamlit app
 def main():
-    st.title("Hugging Face API PDF Extractor")
+    st.title("ReResearch ")
+    st.write("Powered by Hugging Face")
     st.write("Upload a PDF file and extract structured information (title, authors, headings, and references) using the Hugging Face API.")
 
     # Securely retrieve the API token
@@ -57,13 +58,13 @@ def main():
         # Extract text from PDF
         extracted_text = extract_text_from_pdf(file_data)
 
-        st.write("Extracting information...")
+        st.write("ReResearch is Extracting information...")
 
         # Define prompts for information extraction
-        title_prompt = f"Extract the title from this document:\n{extracted_text[:500]}"
-        authors_prompt = f"Identify the authors of this document:\n{extracted_text[:500]}"
-        headings_prompt = f"List the headings in this document:\n{extracted_text[:1000]}"
-        references_prompt = f"Identify the references in this document:\n{extracted_text[-2000:]}"
+        title_prompt = f"Please extract the title of this document:\n\n{extracted_text[:1000]}"
+        authors_prompt = f"Please list the authors of this document in list format:\n\n{extracted_text[:1000]}"
+        headings_prompt = f"Please list all the headings from this document:\n\n{extracted_text[:2000]}"
+        references_prompt = f"Please extract the references from this document:\n\n{extracted_text[-2000:]}"
 
         # Query the API for each prompt
         title = query_huggingface_api(title_prompt, api_token)
