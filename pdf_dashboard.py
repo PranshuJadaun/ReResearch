@@ -5,7 +5,7 @@ import requests
 from io import BytesIO
 
 # Hugging Face Inference API query function
-def query_huggingface_api(prompt, api_token, model="gpt-2"):
+def query_huggingface_api(prompt, api_token, model="EleutherAI/gpt-neo-125M"):
     headers = {"Authorization": f"Bearer {api_token}"}
     api_url = f"https://api-inference.huggingface.co/models/{model}"
     payload = {"inputs": prompt, "parameters": {"max_length": 150}}
