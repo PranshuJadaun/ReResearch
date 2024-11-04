@@ -14,11 +14,12 @@ def query_huggingface_api(prompt, api_token, model="facebook/bart-large-cnn"):
     # Check if the response is valid
     if response.status_code == 200:
         try:
-            # Try to extract 'generated_text'
             return response.json()[0]["generated_text"]
         except (IndexError, KeyError):
+            st.error(f"Unexpected response structure: {response.json()}")
             raise Exception("The response does not contain 'generated_text'. Please check the model's output.")
     else:
+        st.error(f"API request failed with status code {response.status_code}: {response.text}")
         raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
 
 # Function to extract text from PDF
@@ -80,7 +81,7 @@ def main():
             authors = query_huggingface_api(authors_prompt, api_token)
         except Exception as e:
             st.error(f"Failed to extract authors using API: {e}")
-            title, authors = extract_title_and_authors(extracted_text)  # Fallback extraction
+            authors = extract_title_and_authors(extracted_text)[1]  # Fallback extraction
 
         # Try extracting headings
         try:
