@@ -1,17 +1,16 @@
 import fitz  # PyMuPDF
-import streamlit as st
 import requests
 from io import BytesIO
+import streamlit as st
 
 # Hugging Face Inference API query function
 def query_huggingface_api(prompt, api_token, model="facebook/bart-large-cnn"):
     headers = {"Authorization": f"Bearer {api_token}"}
     api_url = f"https://api-inference.huggingface.co/models/{model}"
-    payload = {"inputs": prompt, "parameters": {"max_length": 300}}
+    payload = {"inputs": prompt}  # Removed max_length
     
     response = requests.post(api_url, headers=headers, json=payload)
 
-    # Check if the response is valid
     if response.status_code == 200:
         try:
             return response.json()[0]["summary_text"]
@@ -31,6 +30,13 @@ def extract_text_from_pdf(file_data):
         text += page.get_text("text")
     pdf_document.close()
     return text
+
+# Function to split text into chunks
+def split_text(text, max_chunk_size=1000):
+    """Splits the input text into smaller chunks."""
+    words = text.split()
+    for i in range(0, len(words), max_chunk_size):
+        yield ' '.join(words[i:i + max_chunk_size])
 
 # Streamlit app
 def main():
@@ -52,29 +58,28 @@ def main():
         st.write("Extracting information with Hugging Face API...")
 
         # Define prompts for information extraction
-        title_prompt = f"Extract the title from this document:\n{extracted_text}"
-        authors_prompt = f"Identify the authors of this document:\n{extracted_text}"
-        headings_prompt = f"List the headings in this document:\n{extracted_text}"
-        references_prompt = f"Identify the references in this document:\n{extracted_text}"
+        prompts = {
+            "Title": f"Extract the title from this document:\n{extracted_text}",
+            "Authors": f"Identify the authors of this document:\n{extracted_text}",
+            "Headings": f"List the headings in this document:\n{extracted_text}",
+            "References": f"Identify the references in this document:\n{extracted_text}"
+        }
 
-        # Query the API for each prompt
-        title = query_huggingface_api(title_prompt, api_token)
-        authors = query_huggingface_api(authors_prompt, api_token)
-        headings = query_huggingface_api(headings_prompt, api_token)
-        references = query_huggingface_api(references_prompt, api_token)
+        results = {}
+        for key, prompt in prompts.items():
+            # Process the text in chunks to avoid API limits
+            chunks = list(split_text(prompt))
+            full_result = ""
+            for chunk in chunks:
+                response = query_huggingface_api(chunk, api_token)
+                if response:
+                    full_result += response + "\n"
+            results[key] = full_result.strip()
 
         # Display results in an organized manner
-        st.subheader("Title")
-        st.write(title if title else "Title extraction failed.")
-
-        st.subheader("Authors")
-        st.write(authors if authors else "Authors extraction failed.")
-
-        st.subheader("Headings")
-        st.write(headings if headings else "Headings extraction failed.")
-
-        st.subheader("References")
-        st.write(references if references else "References extraction failed.")
+        for key in results:
+            st.subheader(key)
+            st.write(results[key] if results[key] else f"{key} extraction failed.")
 
 if __name__ == "__main__":
     main()
