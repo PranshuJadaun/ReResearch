@@ -5,15 +5,28 @@ import requests
 from io import BytesIO
 
 # Hugging Face Inference API query function
-def query_huggingface_api(prompt, api_token, model="EleutherAI/gpt-neo-125M"):
+# def query_huggingface_api(prompt, api_token, model="EleutherAI/gpt-neo-125M"):
+#     headers = {"Authorization": f"Bearer {api_token}"}
+#     api_url = f"https://api-inference.huggingface.co/models/{model}"
+#     payload = {"inputs": prompt, "parameters": {"max_length": 150}}
+#     response = requests.post(api_url, headers=headers, json=payload)
+#     if response.status_code == 200:
+#         return response.json()[0]["generated_text"]
+#     else:
+#         raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
+def query_huggingface_api(prompt, api_token, model="gpt-2"):
     headers = {"Authorization": f"Bearer {api_token}"}
     api_url = f"https://api-inference.huggingface.co/models/{model}"
     payload = {"inputs": prompt, "parameters": {"max_length": 150}}
-    response = requests.post(api_url, headers=headers, json=payload)
-    if response.status_code == 200:
+    
+    try:
+        response = requests.post(api_url, headers=headers, json=payload, timeout=10)
+        response.raise_for_status()  # Raise an error for bad responses
         return response.json()[0]["generated_text"]
-    else:
-        raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
+    except requests.exceptions.Timeout:
+        raise Exception("The request timed out. Please try again.")
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"API request failed: {e}")
 
 # Function to extract text from PDF
 def extract_text_from_pdf(file_data):
