@@ -15,7 +15,7 @@ def query_huggingface_api(prompt, api_token, model="gpt-2"):
     else:
         raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
 
-# Function to extract text from the PDF
+# Function to extract text from PDF
 def extract_text_from_pdf(file_data):
     pdf_document = fitz.open(stream=BytesIO(file_data), filetype="pdf")
     text = ""
@@ -30,13 +30,13 @@ def main():
     st.title("Hugging Face API PDF Extractor")
     st.write("Upload a PDF file and extract structured information (title, authors, headings, and references) using the Hugging Face API.")
 
-    # Get API token from user input
-    api_token = st.text_input("Enter your Hugging Face API token:", type="password")
+    # Securely retrieve the API token
+    api_token = st.secrets["HUGGINGFACE_API_TOKEN"]
     
     # Upload PDF file
     uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
     if uploaded_file and api_token:
-        file_data = uploaded_file.read()  # Read file once and store data
+        file_data = uploaded_file.read()
 
         # Extract text from PDF
         extracted_text = extract_text_from_pdf(file_data)
