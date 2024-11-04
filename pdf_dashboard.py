@@ -14,10 +14,11 @@ def query_huggingface_api(prompt, api_token, model="facebook/bart-large-cnn"):
     # Check if the response is valid
     if response.status_code == 200:
         try:
-            return response.json()[0]["generated_text"]
+            # Update this line to extract 'summary_text'
+            return response.json()[0]["summary_text"]
         except (IndexError, KeyError):
             st.error(f"Unexpected response structure: {response.json()}")
-            raise Exception("The response does not contain 'generated_text'. Please check the model's output.")
+            raise Exception("The response does not contain the expected text. Please check the model's output.")
     else:
         st.error(f"API request failed with status code {response.status_code}: {response.text}")
         raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
