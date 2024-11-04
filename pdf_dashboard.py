@@ -62,10 +62,10 @@ def main():
         st.write("Extracting information with Hugging Face API...")
 
         # Define prompts for information extraction
-        title_prompt = f"Extract the title from the following text:\n\n{extracted_text[:500]}"
-        authors_prompt = f"Identify the authors of the following text:\n\n{extracted_text[:500]}"
-        headings_prompt = f"List the headings in the following text:\n\n{extracted_text[:1000]}"
-        references_prompt = f"Identify the references in the following text:\n\n{extracted_text[-2000:]}"
+        title_prompt = f"Extract the title from the following text and present them as list of references:\n\n{extracted_text[:500]}"
+        authors_prompt = f"Identify the authors of the following text and present them as list of references:\n\n{extracted_text[:500]}"
+        headings_prompt = f"List the headings in the following text and present them as list of references:\n\n{extracted_text[:1000]}"
+        references_prompt = f"Identify the references in the following text and present them as list of references:\n\n{extracted_text[-2000:]}"
 
         # Try to query the API for each prompt
         title, authors, headings, references = "Not extracted", "Not extracted", "Not extracted", "Not extracted"
