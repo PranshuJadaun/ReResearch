@@ -3,33 +3,17 @@ import re
 import streamlit as st
 import requests
 from io import BytesIO
-import time
 
 # Hugging Face Inference API query function
-def query_huggingface_api(prompt, api_token, model="gpt2", retries=5):
+def query_huggingface_api(prompt, api_token, model="facebook/bart-large-cnn"):
     headers = {"Authorization": f"Bearer {api_token}"}
     api_url = f"https://api-inference.huggingface.co/models/{model}"
     payload = {"inputs": prompt, "parameters": {"max_length": 150}}
-
-    for attempt in range(retries):
-        try:
-            response = requests.post(api_url, headers=headers, json=payload, timeout=10)
-            response.raise_for_status()  # Raises an error for bad HTTP status codes
-            return response.json()[0]["generated_text"]
-        except requests.exceptions.Timeout:
-            st.warning("The request timed out. Please try again.")
-            return None
-        except requests.exceptions.RequestException as e:
-            if response.status_code == 503 and attempt < retries - 1:
-                st.warning(f"Attempt {attempt + 1}: Service unavailable, retrying...")
-                time.sleep(2 ** attempt)  # Exponential backoff
-                continue
-            else:
-                st.error(f"API request failed: {e}")
-                return None
-
-    st.error("Max retries reached. Unable to complete the request.")
-    return None
+    response = requests.post(api_url, headers=headers, json=payload)
+    if response.status_code == 200:
+        return response.json()[0]["generated_text"]
+    else:
+        raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
 
 # Function to extract text from PDF
 def extract_text_from_pdf(file_data):
@@ -41,10 +25,19 @@ def extract_text_from_pdf(file_data):
     pdf_document.close()
     return text
 
+# Local extraction function for title and authors
+def extract_title_and_authors(text):
+    title_pattern = r"(?<=\n)[^\n]+\n"  # Basic title pattern
+    author_pattern = r"\b[A-Z][a-z]+(?: [A-Z][a-z]+)*\b"  # Simple pattern for names
+    
+    title = re.findall(title_pattern, text)
+    authors = re.findall(author_pattern, text)
+    
+    return title[0].strip() if title else "Title not found", authors if authors else "Authors not found"
+
 # Streamlit app
 def main():
-    st.title("ReResearch ")
-    st.write("Powered by Hugging Face")
+    st.title("Hugging Face API PDF Extractor")
     st.write("Upload a PDF file and extract structured information (title, authors, headings, and references) using the Hugging Face API.")
 
     # Securely retrieve the API token
@@ -58,19 +51,38 @@ def main():
         # Extract text from PDF
         extracted_text = extract_text_from_pdf(file_data)
 
-        st.write("ReResearch is Extracting information...")
+        st.write("Extracting information with Hugging Face API...")
 
         # Define prompts for information extraction
-        title_prompt = f"Please extract the title of this document:\n\n{extracted_text[:1000]}"
-        authors_prompt = f"Please list the authors of this document in list format:\n\n{extracted_text[:1000]}"
-        headings_prompt = f"Please list all the headings from this document:\n\n{extracted_text[:2000]}"
-        references_prompt = f"Please extract the references from this document:\n\n{extracted_text[-2000:]}"
+        title_prompt = f"Extract the title from the following text:\n\n{extracted_text[:500]}"
+        authors_prompt = f"Identify the authors of the following text:\n\n{extracted_text[:500]}"
+        headings_prompt = f"List the headings in the following text:\n\n{extracted_text[:1000]}"
+        references_prompt = f"Identify the references in the following text:\n\n{extracted_text[-2000:]}"
 
-        # Query the API for each prompt
-        title = query_huggingface_api(title_prompt, api_token)
-        authors = query_huggingface_api(authors_prompt, api_token)
-        headings = query_huggingface_api(headings_prompt, api_token)
-        references = query_huggingface_api(references_prompt, api_token)
+        # Try to query the API for each prompt
+        try:
+            title = query_huggingface_api(title_prompt, api_token)
+        except Exception as e:
+            st.error(f"Failed to extract title using API: {e}")
+            title, authors = extract_title_and_authors(extracted_text)  # Fallback extraction
+
+        try:
+            authors = query_huggingface_api(authors_prompt, api_token)
+        except Exception as e:
+            st.error(f"Failed to extract authors using API: {e}")
+            title, authors = extract_title_and_authors(extracted_text)  # Fallback extraction
+
+        try:
+            headings = query_huggingface_api(headings_prompt, api_token)
+        except Exception as e:
+            st.error(f"Failed to extract headings using API: {e}")
+            headings = "Headings extraction failed."
+
+        try:
+            references = query_huggingface_api(references_prompt, api_token)
+        except Exception as e:
+            st.error(f"Failed to extract references using API: {e}")
+            references = "References extraction failed."
 
         # Display results
         st.subheader("Title")
@@ -84,6 +96,6 @@ def main():
 
         st.subheader("References")
         st.write(references)
-        
+
 if __name__ == "__main__":
     main()
