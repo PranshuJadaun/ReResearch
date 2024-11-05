@@ -1,29 +1,11 @@
-import fitz  # PyMuPDF
 import re
+import fitz  # PyMuPDF
 import streamlit as st
-import requests
 from io import BytesIO
+import nltk
+from nltk.corpus import names
 
-# Hugging Face Inference API query function
-def query_huggingface_api(prompt, api_token, model="facebook/bart-large-cnn"):
-    headers = {"Authorization": f"Bearer {api_token}"}
-    api_url = f"https://api-inference.huggingface.co/models/{model}"
-    payload = {"inputs": prompt, "parameters": {"max_length": 150}}
-    response = requests.post(api_url, headers=headers, json=payload)
-
-    # Check if the response is valid
-    if response.status_code == 200:
-        try:
-            # Update this line to extract 'summary_text'
-            return response.json()[0]["summary_text"]
-        except (IndexError, KeyError):
-            st.error(f"Unexpected response structure: {response.json()}")
-            raise Exception("The response does not contain the expected text. Please check the model's output.")
-    else:
-        st.error(f"API request failed with status code {response.status_code}: {response.text}")
-        raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
-
-# Function to extract text from PDF
+# PDF --> text
 def extract_text_from_pdf(file_data):
     pdf_document = fitz.open(stream=BytesIO(file_data), filetype="pdf")
     text = ""
@@ -33,83 +15,107 @@ def extract_text_from_pdf(file_data):
     pdf_document.close()
     return text
 
-# Local extraction function for title and authors
-def extract_title_and_authors(text):
-    title_pattern = r"(?<=\n)[^\n]+\n"  # Basic title pattern
-    author_pattern = r"\b[A-Z][a-z]+(?: [A-Z][a-z]+)*\b"  # Simple pattern for names
-    
-    title = re.findall(title_pattern, text)
-    authors = re.findall(author_pattern, text)
-    
-    return title[0].strip() if title else "Title not found", authors if authors else "Authors not found"
+# Download the NLTK names dataset (This section is Copied from ChatGPT to get more accurate results)
+nltk.download("names")
+all_names = set(names.words())  # Contains common first names (male and female)
 
-# Streamlit app
+# To extract the title from the PDF
+def extract_title(text):
+    lines = text.split("\n")
+    for line in lines[:10]:  # Check only the first few lines
+        if len(line.strip()) > 10:
+            return line.strip()
+    return "Title not found"
+
+# Function to extract headings based on font size and bold text
+def extract_headings_from_pdf(file_data):
+    pdf_document = fitz.open(stream=BytesIO(file_data), filetype="pdf")
+    headings = []
+    for page_number in range(pdf_document.page_count):
+        page = pdf_document[page_number]
+        blocks = page.get_text("dict")["blocks"]
+        
+        for block in blocks:
+            if "lines" in block:
+                for line in block["lines"]:
+                    for span in line["spans"]:
+                        if span["size"] > 12 and span["flags"] & 2:  # flags & 2 checks for bold text
+                            headings.append(span["text"])
+    pdf_document.close()
+    return headings
+
+# Text --> Authors
+def extract_authors(text):
+    # Limit search to the first 15 lines (common for author names)
+    lines = text.split("\n")[:15]
+    limited_text = "\n".join(lines)
+    
+    # ReGex pattern to capture names
+    author_pattern = r"\b[A-Z][a-z]+(?:\s[A-Z]\.)?(?:\s[A-Z][a-z]+)\b"
+    potential_authors = re.findall(author_pattern, limited_text)
+    
+    return list(set(authors))
+
+# Text --> references
+def extract_references(text):
+    reference_pattern = r"(\[\d+\].*?\.)|(\d+\.\s.*?\.)"  # Capture styles with numbers or brackets
+    references = re.findall(reference_pattern, text)
+    return [ref[0] if ref[0] else ref[1] for ref in references] if references else ["References not found"]
+
+
+
+# Uses Streamlit to make GUI 
 def main():
-    st.title("Hugging Face API PDF Extractor")
-    st.write("Upload a PDF file and extract structured information (title, authors, headings, and references) using the Hugging Face API.")
+    st.set_page_config(page_title="ReResearch for Research", page_icon="🤠")
+    st.title("ReResearch for Research 📄")
+    st.write("Created with ❤️ by Pranshu.")
 
-    # Securely retrieve the API token
-    api_token = st.secrets["HUGGINGFACE_API_TOKEN"]
+    st.sidebar.title("📁 Upload Your PDF")
+    uploaded_file = st.sidebar.file_uploader("Choose a PDF file", type="pdf")
     
-    # Upload PDF file
-    uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
-    if uploaded_file and api_token:
-        file_data = uploaded_file.read()
+    if uploaded_file is not None:
+        file_data = uploaded_file.read()  # Read file once and store data
+        st.sidebar.success("File uploaded successfully! 🥹")
+        st.sidebar.success("Research is working 😎")
 
-        # Extract text from PDF
-        extracted_text = extract_text_from_pdf(file_data)
+        with st.spinner("Have a cup of ☕️ Until we cook... please wait."):
+            pdf_text = extract_text_from_pdf(file_data)
+            title = extract_title(pdf_text)
+            headings = extract_headings_from_pdf(file_data)
+            authors = extract_authors(pdf_text)
+            references = extract_references(pdf_text)
 
-        st.write("Extracting information with Hugging Face API...")
-
-        # Define prompts for information extraction
-        title_prompt = f"Extract the title from the following text and present them as list of references:\n\n{extracted_text[:500]}"
-        authors_prompt = f"Identify the authors of the following text and present them as list of references:\n\n{extracted_text[:500]}"
-        headings_prompt = f"List the headings in the following text and present them as list of references:\n\n{extracted_text[:1000]}"
-        references_prompt = f"Identify the references in the following text and present them as list of references:\n\n{extracted_text[-2000:]}"
-
-        # Try to query the API for each prompt
-        title, authors, headings, references = "Not extracted", "Not extracted", "Not extracted", "Not extracted"
-
-        # Try extracting title
-        try:
-            title = query_huggingface_api(title_prompt, api_token)
-        except Exception as e:
-            st.error(f"Failed to extract title using API: {e}")
-            title, authors = extract_title_and_authors(extracted_text)  # Fallback extraction
-
-        # Try extracting authors
-        try:
-            authors = query_huggingface_api(authors_prompt, api_token)
-        except Exception as e:
-            st.error(f"Failed to extract authors using API: {e}")
-            authors = extract_title_and_authors(extracted_text)[1]  # Fallback extraction
-
-        # Try extracting headings
-        try:
-            headings = query_huggingface_api(headings_prompt, api_token)
-        except Exception as e:
-            st.error(f"Failed to extract headings using API: {e}")
-            headings = "Headings extraction failed."
-
-        # Try extracting references
-        try:
-            references = query_huggingface_api(references_prompt, api_token)
-        except Exception as e:
-            st.error(f"Failed to extract references using API: {e}")
-            references = "References extraction failed."
+        # # Display a summary
+        # st.header("Summary of Extraction 📝")
+        # st.write(f"**Title:** {title}")
+        # st.write(f"**Number of Headings Found:** {len(headings)}")
+        # st.write(f"**Number of Authors Found:** {len(authors)}")
+        # st.write(f"**Number of References Found:** {len(references)}")
+        # st.markdown("---")
 
         # Display results
-        st.subheader("Title")
-        st.write(title)
+        st.subheader("Title 🎓")
+        st.markdown(f"**{title}**")
 
-        st.subheader("Authors")
-        st.write(authors)
+        st.subheader("Headings 📌")
+        if headings:
+            for heading in headings:
+                st.markdown(f"- {heading}")
+        else:
+            st.write("No headings found. 😢")
 
-        st.subheader("Headings")
-        st.write(headings)
+        st.subheader("Authors 👥")
+        if authors:
+            st.write("The authors identified in the document are:")
+            st.write(", ".join(authors))
+        else:
+            st.write("No authors found.")
 
-        st.subheader("References")
-        st.write(references)
+        st.subheader("References 📚")
+        if references:
+            for ref in references:
+                st.markdown(f"- {ref}")
+        else:
+            st.write("No references found. 😥")
 
-if __name__ == "__main__":
-    main()
+main()
