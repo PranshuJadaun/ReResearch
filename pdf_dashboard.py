@@ -54,15 +54,14 @@ def extract_authors(text):
     author_pattern = r"\b[A-Z][a-z]+(?:\s[A-Z]\.)?(?:\s[A-Z][a-z]+)\b"
     potential_authors = re.findall(author_pattern, limited_text)
     
-    return list(set(authors))
+    # Only return unique potential author names
+    return list(set(potential_authors))
 
 # Text --> references
 def extract_references(text):
     reference_pattern = r"(\[\d+\].*?\.)|(\d+\.\s.*?\.)"  # Capture styles with numbers or brackets
     references = re.findall(reference_pattern, text)
     return [ref[0] if ref[0] else ref[1] for ref in references] if references else ["References not found"]
-
-
 
 # Uses Streamlit to make GUI 
 def main():
@@ -84,14 +83,6 @@ def main():
             headings = extract_headings_from_pdf(file_data)
             authors = extract_authors(pdf_text)
             references = extract_references(pdf_text)
-
-        # # Display a summary
-        # st.header("Summary of Extraction 📝")
-        # st.write(f"**Title:** {title}")
-        # st.write(f"**Number of Headings Found:** {len(headings)}")
-        # st.write(f"**Number of Authors Found:** {len(authors)}")
-        # st.write(f"**Number of References Found:** {len(references)}")
-        # st.markdown("---")
 
         # Display results
         st.subheader("Title 🎓")
