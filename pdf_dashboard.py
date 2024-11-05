@@ -69,13 +69,13 @@ def main():
     st.title("ReResearch for Research 📄")
     st.write("Created with ❤️ by Pranshu.")
 
-    st.sidebar.title("📁 Upload Your PDF")
-    uploaded_file = st.sidebar.file_uploader("Choose a PDF file", type="pdf")
+    st.title("📁 Upload Your PDF")
+    uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
     
     if uploaded_file is not None:
         file_data = uploaded_file.read()  # Read file once and store data
-        st.sidebar.success("File uploaded successfully! 🥹")
-        st.sidebar.success("Research is working 😎")
+        st.success("File uploaded successfully! 🥹")
+        st.success("Research is working 😎")
 
         with st.spinner("Have a cup of ☕️ Until we cook... please wait."):
             pdf_text = extract_text_from_pdf(file_data)
