@@ -118,4 +118,5 @@ def main():
         else:
             st.write("No references found. 😥")
 
-main()
+if __name__ == "__main__":
+    main()
