@@ -71,7 +71,7 @@ def main():
         with st.spinner("Have a cup of ☕️ Until we cook... please wait."):
             pdf_text = extract_text_from_pdf(file_data)
             title = extract_title(pdf_text)
-            headings = extract_headings(file_data)
+            headings = extract_headings(pdf_text)  # Pass pdf_text instead of file_data
             authors = extract_authors(pdf_text)
             references = extract_references(pdf_text)
 
