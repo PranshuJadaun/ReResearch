@@ -65,13 +65,12 @@ def main():
     
     if uploaded_file is not None:
         file_data = uploaded_file.read()  # Read file once and store data
-        st.success("File uploaded successfully! 🥹")
-        st.success("Research is working 😎")
+        st.success("File uploaded successfully! 🥹 \n Research is working 😎")
 
         with st.spinner("Have a cup of ☕️ Until we cook... please wait."):
             pdf_text = extract_text_from_pdf(file_data)
             title = extract_title(pdf_text)
-            headings = extract_headings(pdf_text)  # Pass pdf_text instead of file_data
+            headings = extract_headings(pdf_text)  
             authors = extract_authors(pdf_text)
             references = extract_references(pdf_text)
 
