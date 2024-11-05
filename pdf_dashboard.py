@@ -28,20 +28,11 @@ def extract_title(text):
     return "Title not found"
 
 # Function to extract headings based on font size and bold text
-def extract_headings_from_pdf(file_data):
-    pdf_document = fitz.open(stream=BytesIO(file_data), filetype="pdf")
-    headings = []
-    for page_number in range(pdf_document.page_count):
-        page = pdf_document[page_number]
-        blocks = page.get_text("dict")["blocks"]
-        
-        for block in blocks:
-            if "lines" in block:
-                for line in block["lines"]:
-                    for span in line["spans"]:
-                        if span["size"] > 12 and span["flags"] & 2:  # flags & 2 checks for bold text
-                            headings.append(span["text"])
-    pdf_document.close()
+# To extract headings
+def extract_headings(text):
+    heading_pattern = r"(^[A-Z\s]+$)|(^\d+\.\s[A-Za-z\s]+$)"
+    matches = re.findall(heading_pattern, text, re.MULTILINE)
+    headings = [h[0] or h[1] for h in matches if h[0] or h[1]]
     return headings
 
 # Text --> Authors
@@ -80,7 +71,7 @@ def main():
         with st.spinner("Have a cup of ☕️ Until we cook... please wait."):
             pdf_text = extract_text_from_pdf(file_data)
             title = extract_title(pdf_text)
-            headings = extract_headings_from_pdf(file_data)
+            headings = extract_headings(file_data)
             authors = extract_authors(pdf_text)
             references = extract_references(pdf_text)
 
