@@ -15,7 +15,7 @@ def extract_text_from_pdf(file_data):
     pdf_document.close()
     return text
 
-# Download the NLTK names dataset (This section is Copied from ChatGPT to get more accurate results)
+# Download the NLTK names dataset
 nltk.download("names")
 all_names = set(names.words())  # Contains common first names (male and female)
 
@@ -98,6 +98,20 @@ def main():
                 st.markdown(f"- {ref}")
         else:
             st.write("No references found. 😥")
+
+        # New Feature: Full Text Display with Copy Button
+        st.subheader("Extracted Full Text 📝")
+        if st.button("Show Full Text"):
+            with st.expander("Click to expand the full text"):
+                st.text_area("Extracted Text:", pdf_text, height=300, key="full_text")
+
+            # Add a copy button using Streamlit's ability to execute JavaScript
+            copy_button_code = f"""
+                <button onclick="navigator.clipboard.writeText(document.getElementById('full_text').value)">
+                Copy All Text
+                </button>
+            """
+            st.markdown(copy_button_code, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
