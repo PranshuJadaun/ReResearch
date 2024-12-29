@@ -40,15 +40,10 @@ def main():
                 pdf_text = extract_text_from_pdf(file_data)
             
             st.subheader("Extracted Text 📝")
-            # Display the extracted text without line numbers
+            # Display the extracted text
             st.text_area("Extracted Text:", pdf_text, height=300, key="extracted_text")
             
-            # Add Copy All Text Section
-            st.subheader("Copy All Text")
-            st.write("You can manually copy the text below or download it as a .txt file.")
-            st.text_area("Copy Full Text:", pdf_text, height=300, key="full_text")
-            
-            # Download as Text File
+            # Add Download Button
             st.download_button(
                 label="Download Text File",
                 data=pdf_text,
