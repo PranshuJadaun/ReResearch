@@ -43,18 +43,18 @@ def main():
             # Display the extracted text without line numbers
             st.text_area("Extracted Text:", pdf_text, height=300, key="extracted_text")
             
-            # Add Copy All Text Button
+            # Add Copy All Text Section
             st.subheader("Copy All Text")
-            with st.expander("Click to expand and copy the full text"):
-                st.text_area("Copy Full Text:", pdf_text, height=300, key="full_text")
+            st.write("You can manually copy the text below or download it as a .txt file.")
+            st.text_area("Copy Full Text:", pdf_text, height=300, key="full_text")
             
-            # Copy Button using JavaScript
-            copy_button_code = f"""
-                <button onclick="navigator.clipboard.writeText(document.getElementById('full_text').value)">
-                Copy All Text
-                </button>
-            """
-            st.markdown(copy_button_code, unsafe_allow_html=True)
+            # Download as Text File
+            st.download_button(
+                label="Download Text File",
+                data=pdf_text,
+                file_name="extracted_text.txt",
+                mime="text/plain",
+            )
 
     elif choice == "Search in Research File":
         st.subheader("Search in Research File")
