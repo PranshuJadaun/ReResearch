@@ -39,16 +39,14 @@ def main():
             with st.spinner("Extracting text... Please wait!"):
                 pdf_text = extract_text_from_pdf(file_data)
             
-            st.subheader("Extracted Text (Linewise) 📝")
-            # Split text into lines and display them line by line
-            lines = pdf_text.split("\n")
-            for i, line in enumerate(lines, start=1):
-                st.markdown(f"**{i}.** {line.strip()}")
+            st.subheader("Extracted Text 📝")
+            # Display the extracted text without line numbers
+            st.text_area("Extracted Text:", pdf_text, height=300, key="extracted_text")
             
             # Add Copy All Text Button
             st.subheader("Copy All Text")
             with st.expander("Click to expand and copy the full text"):
-                st.text_area("Extracted Text:", pdf_text, height=300, key="full_text")
+                st.text_area("Copy Full Text:", pdf_text, height=300, key="full_text")
             
             # Copy Button using JavaScript
             copy_button_code = f"""
